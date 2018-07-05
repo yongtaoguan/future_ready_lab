@@ -1,44 +1,144 @@
 //define an object that describes a circle
-var circle = {
+/*var circle = {
     diameter:80,
     xCoor: 320,
     yCoor: 240,
     color: [255.0,0], //color is red
     xSpeed: 8,
     ySpeed: 21
-    }
+}
+*/
 
-//setup is run oce at the beginning before we draw
+function Ball(x ,y ,diameter, color, xSpeed, ySpeed){
+    //this is keywords that refers to individual objects
+    this.xCoor = x;
+    this.yCoor = y;
+    this.diameter = diameter;
+    this.color = color || [0, 0, 0];// [0, 0, 0] makes color black
+    this.xSpeed = xSpeed || 10;
+    this.ySpeed = ySpeed || 5;
+}
+
+function randomNumberOfBalls(){
+    amountOfBalls = random([2,5,10,16]); //randomly chooses from array so that only 2, 5, 10, or 16 balls show up
+    var ballList = [];
+    for(var i = 0; i<amountOfBalls; i++){
+        ballList.push(addRandomBall());
+    }
+    return ballList;  
+}
+function addRandomBall(){ //creates a random ball
+    return new Ball (random(0,width),random(0,height), random (10,80),randomColor(), random(0,10), random(0,10));
+}
+//a function for randomized colors 
+function randomColor() {
+    return [random(0,255), random(0,255), random(0,255)];
+}
+
+//a function for a randomized one of 5 randomized pastel colors
+function randomBackgroundColor() {
+    return random([255, 179, 186], [255, 223, 186], [255, 255, 186], [186, 255, 201], [186, 225, 255])
+    }
+//compares the sum of two radii to the distance between the centers of the two colliding balls
+function ballsCollide (ball1, ball2){
+    var radiiSum = (ball1.diameter + ball2.diameter)/2; 
+    var distanceBetweenBalls = dist(ball1.xCoor,ball1.yCoor,ball2.xCoor,ball2.yCoor); //dist() allows you to find distance between center of two circles
+    if(distanceBetweenBalls > radiiSum){ //If the distance between the circles is less than the sum of the circles' radii, they are colliding/touching
+        return false;
+    }
+    else{
+        return true;
+    }
+}
+//setup is run once at the beginning before we draw
 function setup() {
-    createCanvas(1000, 1000);
-    background(255, 255, 255)
-    frameRate(60);
+    backgroundColor = randomBackgroundColor(); //background is a random pastel color everytime it loads
+    frameRate(20);
+    ballList = randomNumberOfBalls();
+    
+    //allows user to create their own canvas size
+    var width = (parseInt(prompt("Type in the width for the canvas.")));
+    while (isNaN(width)|| width<=0){ //prevents user from typing in a negative number or a letter
+        width = parseInt(prompt("Enter a NUMBER for the width of your canvas that is greater than 0.")); 
+    }
+    var height = (parseInt(prompt("Type in the height for the canvas.")));
+    while (isNaN(height) || height<=0){ //prevents user from typing in a negative number or a letter
+        height = parseInt(prompt("Enter a NUMBER for the height of your canvas that is greater than 0."));
+    }
+    createCanvas(width, height);
 }
-  
-function draw(){
-    fill(circle.color);
-    ellipse(circle.xCoor, circle.yCoor, circle.diameter);
+function draw() {
+    background(backgroundColor); //avoids showing the trail of balls
+    for (var i =0; i < ballList.length; i++){
+        fill(ballList[i].color);
+        ellipse(ballList[i].xCoor, ballList[i].yCoor, ballList[i].diameter);
     
-    // if xCoor of circle is greater than or less than length of canvas
-    if(circle.xCoor > 1000 || circle.xCoor < 0){
-        circle.color = [random(255), random(255), random(255)], //color is randomized
-            circle.xSpeed = -circle.xSpeed;// bounces back
+    //boundaries placed on the edge of the canvas   
+    // if the xCoor of circle is greater than the length of the canvas, bounce back
+    //when circle bounces back, size changes
+    if(ballList[i].xCoor > width || ballList[i].xCoor <0){
+        ballList[i].diameter = random (10,80);
+        ballList[i].color = randomColor();
+        ballList[i].xSpeed = -ballList[i].xSpeed;
     }
     
-    //if not greater than or less than length of canvas
-      else if(circle.xCoor < 0){  
-        circle.xSpeed = -circle.xSpeed; //keep going
+    //if the yCoor of circle is greater than the width of the canvas, bounce back 
+    //when circle bounces back, size changes
+    if(ballList[i].yCoor > height || ballList[i].yCoor <0){
+        ballList[i].diameter = random (10,80);
+        ballList[i].color = randomColor();
+        ballList[i].ySpeed = -ballList[i].ySpeed;
     }
-    circle.xCoor += circle.xSpeed;
+        ballList[i].xCoor += ballList[i].xSpeed;
+        ballList[i].yCoor += ballList[i].ySpeed;
+        
+        noStroke();  // no outline
+    }
     
-    //if yCoor of circle is greater than or less than length of canvas bounce back
-    if(circle.yCoor > 1000 || circle.yCoor <0){
-        circle.diameter = (random(150, 50)),
-            circle.ySpeed = -circle.ySpeed
+    //ball react to each other; elastic collision
+    for(var j = 0; j < ballList.length; j++){ //j is basically the first ball used to detect a collision
+        for(var k = j+1; k < ballList.length; k++){ //k is the second ball used to detect a collision
+            var overlap = ballsCollide(ballList[j],ballList[k]);
+            
+            if(overlap){
+                var leftBall = ballList[j]; //assuming that the first ball is on the left
+                var rightBall = ballList[k]; //assuming second ball in on the right
+                
+                //variables are swapped if the placement of the "left ball" is to the right of the "right ball"
+                //this allows the colliding balls to avoid "going through each other" if the balls are switched
+                if(rightBall.xCoor < leftBall.xCoor){
+                    leftBall = ballList[k];
+                    rightBall = ballList[j];
+                }
+                
+                //when the balls collide, the one on the right bounces back towards the right, the one on the left bounces towards the left    
+                if(leftBall.xSpeed > 0){
+                    leftBall.xSpeed = -leftBall.xSpeed;
+                }
+                
+                if(rightBall.xSpeed < 0){
+                    rightBall.xSpeed = -rightBall.xSpeed;
+                }
+                
+                var highBall = ballList[j]; //assuming first ball is above the second ball
+                var lowBall = ballList[k]; //assuming second ball is below the first ball
+                
+                //variables are swapped if the placement of the "higher ball" when it is lower than the "lower ball"
+                //this allows the colliding balls to avoid "going through each other" if the balls are switched
+                if(highBall.yCoor < lowBall.yCoor){
+                    highBall = ballList[k];
+                    lowBall = ballList[j];
+                }
+                
+                //Allows higher ball to go up, lower ball to go down to make it seem as if tehy're bouncing off of each other
+                if(highBall.ySpeed < 0){
+                    highBall.ySpeed = -highBall.ySpeed;
+                }
+                
+                if(lowBall.ySpeed > 0){
+                    lowBall.ySpeed = -lowBall.ySpeed;
+                }     
+            }    
+        } 
     }
-    else if(circle.yCoor < 0){
-        circle.ySpeed = -circle.ySpeed;
-    }
-    circle.yCoor += circle.ySpeed;
 }
-
